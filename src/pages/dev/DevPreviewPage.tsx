@@ -2,9 +2,7 @@ import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import BottomNav from "../../components/BottomNav";
-import TopBar from "../../components/TopBar";
-import GatePage from "../auth/GatePage";
-import MemberLoginPage from "../auth/MemberLoginPage";
+import LoginPage from "../auth/LoginPage";
 import WorshipSchedulePage from "../worship/WorshipSchedulePage";
 import ProfilePage from "../ProfilePage";
 import MemberProfileSetupPage from "../MemberProfileSetupPage";
@@ -150,34 +148,12 @@ function NavPreview() {
 const SCREENS: Record<string, () => React.ReactElement> = {
   nav: () => <NavPreview />,
 
-  // 상단 바. 실제 앱처럼 캔버스 위에 얹고, 밑에 흰 카드를 하나 둬 하이라인 분리를 확인한다.
-  topbar: () => (
-    <MemoryRouter initialEntries={["/worship"]}>
-      <div className="mx-auto w-full max-w-md min-h-dvh bg-bg-alternative flex flex-col">
-        <TopBar />
-        <div className="p-4 flex flex-col gap-3">
-          <div className="rounded-card bg-bg-normal shadow-small p-4 text-body1 text-label-neutral">
-            바 밑을 스치는 흰 카드
-          </div>
-        </div>
-      </div>
-    </MemoryRouter>
-  ),
-
-  gate: () => {
-    asLoggedOut();
-    return (
-      <MemoryRouter initialEntries={["/"]}>
-        <Phone><GatePage /></Phone>
-      </MemoryRouter>
-    );
-  },
-
+  // 비로그인 첫 화면. 옛 게이트("나누리 멤버"/"외부 사용자")를 흡수했다.
   login: () => {
     asLoggedOut();
     return (
-      <MemoryRouter initialEntries={["/member/login"]}>
-        <Phone><MemberLoginPage /></Phone>
+      <MemoryRouter initialEntries={["/"]}>
+        <Phone><LoginPage /></Phone>
       </MemoryRouter>
     );
   },

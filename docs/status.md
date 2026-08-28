@@ -12,7 +12,7 @@
 | 인증 (구글 OAuth) | 동작 | `authStore` + `ProtectedRoute` |
 | 찬양팀 일정 | **핵심 기능** | `/worship`, Realtime 반영 |
 | 프로필 (이름·팀·포지션·연락처) | 동작 | `/member/setup`, `/profile` |
-| 하단 탭바 (찬양팀·내정보) | 동작 | `Layout`이 `TAB_BAR_ROUTES`에서 렌더 |
+| 하단 탭바 (홈·프로필) | 동작 | `Layout`이 `TAB_BAR_ROUTES`에서 렌더 |
 | 소모임 | **폐기** | 2026-08-28 코드 제거 |
 | 비용 청구 | **폐기** | 관리자 앱 + 공개 청구 폼(`nanuri-form`)으로 이관 |
 | 행사 · 갤러리 · 회계 · 통계 · 순서별 평가 | **폐기** | 2026-07 중 제거 |
@@ -105,7 +105,8 @@ set -a; . ./.env.local; set +a; npx supabase db push
   `position` · `team` 만 채우면 됩니다. UUID 를 손으로 옮길 필요가 없습니다.
 
 `position` 이 비면 그 사람은 **찬양팀 시트에 아예 안 뜹니다**(쿼리가
-`.not("position", "is", null)` 로 거릅니다). 내정보 화면이 이 상태를 안내하도록 해뒀습니다.
+`.not("position", "is", null)` 로 거릅니다). 그래서 `ProtectedRoute` 가 포지션 없는 사람을
+`/member/setup` 으로 돌려보내고, 그 화면은 포지션을 **필수**로 받습니다.
 
 ### 적용 후 확인할 것
 
@@ -146,11 +147,11 @@ with check (user_id = auth.uid() or available = false)
 | 화면 | 상태 |
 | --- | --- |
 | 찬양팀 시트 (`WorshipSchedulePage` · `PositionSlot`) | 완료 |
-| 내정보 (`ProfilePage`) | 완료 — 포지션 카드로 재작성 |
+| 프로필 (`ProfilePage`) | 완료 — 포지션 카드로 재작성 |
 | 프로필 편집 (`MemberProfileSetupPage`) | 완료 — 은행·계좌 제거 |
-| 하단 탭바 · 상단 바 (`TopBar`) | 완료 |
+| 하단 탭바 (홈·프로필) | 완료 — 상단 바는 2026-08-28 제거 |
 | `ui/` 프리미티브 6종 + `BackButton` | 완료 |
-| 게이트 · 로그인 (`GatePage` · `MemberLoginPage`) | **미완** — 옛 토큰 6건 |
+| 로그인 (`LoginPage`) | **미완** — 옛 토큰이 남은 마지막 화면. 게이트를 흡수했습니다 |
 | `LoadingScreen` · `LoadingSpinner` | **미완** — 옛 토큰 3건 |
 
 남은 잔재는 이제 이만큼입니다(`index.css` 17건은 폐기 예정 블록 자체라 오탐,
@@ -182,12 +183,12 @@ grep -rnE "#f0f2f8|#8892a0|#6b7785|#0f1117|#4a5568|#c0c8d4|#363d47|rgba\(255,\s*
 바꾼 화면은 눈으로 확인할 수 있습니다. 앱 안의 브라우저 도구로 `localhost:5173` 을 열거나,
 **Claude in Chrome** 확장이 연결돼 있으면 로그인된 세션을 그대로 씁니다.
 
-반대로 게이트·로그인은 **로그인돼 있으면** 리다이렉트돼 볼 수 없습니다. 방향이 반대인 두
+반대로 로그인 화면은 **로그인돼 있으면** 리다이렉트돼 볼 수 없습니다. 방향이 반대인 두
 문제라 개발 전용 미리보기를 뒀습니다 — [`src/pages/dev/DevPreviewPage.tsx`](../src/pages/dev/DevPreviewPage.tsx)가
 `main.tsx` 에서 앱 라우터 **대신** 마운트되고, `authStore` 와 쿼리 캐시를 원하는 상태로 꾸며
 띄웁니다. `import.meta.env.DEV` 게이트라 프로덕션 번들에는 들어가지 않습니다.
 
-현재 화면: `nav` · `topbar` · `gate` · `login` · `worship` · `profile` ·
+현재 화면: `nav` · `login` · `worship` · `profile` ·
 `profile-empty`(포지션 없는 상태) · `profile-setup`. 경로 없이 `/__dev/` 로 가면 목록이 뜹니다.
 
 목 데이터를 추가할 때 주의할 점:

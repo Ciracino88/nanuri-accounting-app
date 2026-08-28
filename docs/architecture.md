@@ -123,7 +123,7 @@ src/
 ├── hooks/               # useWorshipSchedule, useToggleAvailability, useCalendar
 ├── lib/                 # supabase 클라이언트, uploadAvatar
 ├── pages/
-│   ├── auth/              # GatePage, MemberLoginPage
+│   ├── auth/              # LoginPage (구글 OAuth 하나)
 │   ├── dev/               # 개발 전용 UI 미리보기 (/__dev/*, 라우터 바깥)
 │   ├── worship/           # 찬양팀 일정 — 이 앱의 본체
 │   ├── ProfilePage.tsx

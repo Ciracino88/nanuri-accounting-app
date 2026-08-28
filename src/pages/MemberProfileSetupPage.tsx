@@ -45,6 +45,14 @@ export default function MemberProfileSetupPage() {
 
   const onSubmit = async (values: FormValues) => {
     if (!user) return;
+
+    // 포지션은 필수다. ProtectedRoute 가 포지션 없는 사람을 이 화면으로 돌려보내므로,
+    // 비운 채로 저장하게 두면 저장 → 되돌아옴 → 저장의 무한 루프가 된다.
+    if (positions.length === 0) {
+      toast.error("포지션을 하나 이상 골라주세요");
+      return;
+    }
+
     setSubmitting(true);
 
     let avatar_url = userProfile?.avatar_url ?? null;
@@ -54,7 +62,7 @@ export default function MemberProfileSetupPage() {
       id: user.id,
       name: values.name,
       team,
-      position: positions.length > 0 ? positions : null,
+      position: positions,
       phone: values.phone || null,
       avatar_url,
     });

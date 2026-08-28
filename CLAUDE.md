@@ -46,7 +46,8 @@ Supabase(Postgres·Auth·Realtime), Tailwind v4, TanStack Query, Zustand, motion
 알약 예외"라는 근거 없는 규칙을 만들어 뒀고, design.md(칩·배지·아바타만 `rounded-full`)가
 맞았습니다. 코드와 문서가 어긋나면 대개 코드가 틀린 쪽입니다.
 
-하단 탭바는 **떠 있는 글래스 캡슐**입니다(찬양팀·내정보 둘). 화면 하단에 캡슐이 떠서 콘텐츠
+하단 탭바는 **떠 있는 글래스 캡슐**입니다(홈·프로필 둘). 상단 바는 없습니다 — 안전영역
+상단은 `Layout` 의 `main` 이 떠안습니다. 화면 하단에 캡슐이 떠서 콘텐츠
 위에 겹치므로, 새 화면을 그릴 땐 `PAGE_BOTTOM_PAD`로 하단을 비우세요.
 
 ## 명령
@@ -60,8 +61,8 @@ npm run lint     # eslint. 기존 3건(에러 2·경고 1)이 남아 있습니�
 ⚠ **CSS 토큰이 없어지는 건 타입 에러가 아닙니다.** Tailwind가 클래스를 조용히 안 만들 뿐이라
 빌드는 통과하고 화면만 무스타일로 뜹니다.
 
-게이트 뒤 화면은 `/__dev/<key>` 로 확인합니다(`worship` · `profile` · `profile-empty` ·
-`profile-setup` · `gate` · `login` · `nav` · `topbar`). 자세한 건
+로그인 뒤 화면은 `/__dev/<key>` 로 확인합니다(`worship` · `profile` · `profile-empty` ·
+`profile-setup` · `login` · `nav`). 자세한 건
 [docs/status.md](docs/status.md#화면-확인하는-법).
 
 ## 이 작업 환경의 제약

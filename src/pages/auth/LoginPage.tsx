@@ -1,6 +1,5 @@
 import { Navigate } from "react-router-dom";
 import { motion } from "motion/react";
-import BackButton from "../../components/BackButton";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../store/authStore";
 import LoadingScreen from "../../components/LoadingScreen";
@@ -26,7 +25,7 @@ function GoogleLogo() {
   );
 }
 
-export default function MemberLoginPage() {
+export default function LoginPage() {
   const { user, isAnonymous, isLoading } = useAuthStore();
 
   if (isLoading) return <LoadingScreen />;
@@ -41,11 +40,6 @@ export default function MemberLoginPage() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      {/* 뒤로 */}
-      <div className="px-5 pt-6">
-        <BackButton to="/" />
-      </div>
-
       <div className="flex-1 flex flex-col items-center justify-center px-8 gap-10">
         <motion.div
           className="flex flex-col items-center gap-1"
@@ -53,10 +47,11 @@ export default function MemberLoginPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 24 }}
         >
-          <h1 className="text-title font-bold text-fg-strong">로그인</h1>
-          <p className="text-caption text-center leading-relaxed text-fg-muted">
-            Google 계정으로 간편하게 로그인해요
+          <h1 className="text-title1 font-bold text-label-normal" style={{ letterSpacing: "-0.02em" }}>나누리</h1>
+          <p className="text-caption1 font-semibold text-label-neutral" style={{ letterSpacing: "0.2em" }}>
+            WORSHIP TEAM
           </p>
+          <p className="text-label2 text-label-neutral mt-3">Google 계정으로 로그인해요</p>
         </motion.div>
 
         <motion.div

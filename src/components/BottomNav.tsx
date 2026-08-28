@@ -8,10 +8,13 @@ type Tab = { to: string; label: string; kind: CreatureKind };
 
 // 탭은 둘뿐이다. 이 앱이 하는 일은 찬양팀 일정 조율 하나이고, 나머지 기능(소모임·행사·
 // 비용 청구·회계)은 폐기했거나 관리자 iOS 앱으로 옮겨갔다.
-const WORSHIP: Tab = { to: "/worship", label: "찬양팀", kind: "songs" };
-const PROFILE: Tab = { to: "/profile", label: "내정보", kind: "profile" };
+//
+// 시트(/worship)가 이 앱의 홈이라 라벨이 "홈"이다. 경로는 /worship 그대로 뒀다 —
+// 바꿔서 얻을 게 없고 옛 링크만 깨진다.
+const HOME: Tab = { to: "/worship", label: "홈", kind: "home" };
+const PROFILE: Tab = { to: "/profile", label: "프로필", kind: "profile" };
 
-const TABS: Tab[] = [WORSHIP, PROFILE];
+const TABS: Tab[] = [HOME, PROFILE];
 
 /** 떠 있는 글래스 캡슐 탭바(docs/design.md). 화면 하단에 붙지 않고 살짝 띄운다 —
  *  위치(중앙 하단·바닥 띄움)는 Layout 이 잡고, 이 컴포넌트는 캡슐 자체만 그린다.
