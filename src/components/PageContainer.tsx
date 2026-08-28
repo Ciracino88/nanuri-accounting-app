@@ -9,7 +9,7 @@ interface Props {
 }
 
 const WIDTHS = {
-  narrow: "max-w-md",   // 폼 (청구서, 프로필)
+  narrow: "max-w-md",   // 폼 (프로필)
   default: "max-w-lg",  // 홈, 설문, 투표
   wide: "max-w-2xl",    // 워십, 회계 목록
   full: "max-w-5xl",    // 회계 상세/보고서 (표·영수증)

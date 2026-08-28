@@ -2,10 +2,9 @@ import { Outlet, useLocation } from "react-router-dom";
 import BottomNav from "./BottomNav";
 import TopBar from "./TopBar";
 
-// 탭바를 띄우는 화면. 탭 셋(소모임·찬양팀·내정보)에 더해, 로그인 착지점이자 아직
-// 비용 청구·행사로 가는 진입 허브인 /home 에도 띄운다(홈은 탭이 아니라 활성 표시는 없다).
-// 상세·개설·행사·관리자 같은 하위 화면은 BackButton 으로 돌아가는 흐름이라 탭바를 숨긴다.
-const TAB_BAR_ROUTES = ["/home", "/gatherings", "/worship", "/profile"];
+// 탭바를 띄우는 화면. 이 앱은 찬양팀 일정 조율 하나만 하므로 탭은 둘이다.
+// 프로필 편집(/member/setup)은 BackButton 으로 돌아가는 하위 화면이라 탭바를 숨긴다.
+const TAB_BAR_ROUTES = ["/worship", "/profile"];
 
 /** 앱 셸: 앱 프레임(max-w-md) + 스크롤 영역. 배경은 전역(index.css).
  *

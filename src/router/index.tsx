@@ -5,15 +5,10 @@ import MemberLoginPage from "../pages/auth/MemberLoginPage";
 import MemberProfileSetupPage from "../pages/MemberProfileSetupPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Layout from "../components/Layout";
-import HomePage from "../pages/HomePage";
-import BillFormPage from "../pages/bill/BillFormPage";
 import ProfilePage from "../pages/ProfilePage";
 import WorshipSchedulePage from "../pages/worship/WorshipSchedulePage";
-import GatheringListPage from "../pages/gathering/GatheringListPage";
-import GatheringDetailPage from "../pages/gathering/GatheringDetailPage";
-import GatheringFormPage from "../pages/gathering/GatheringFormPage";
-import AdminPage from "../pages/admin/AdminPage";
 
+// 이 앱이 하는 일은 찬양팀 일정 조율 하나다. 로그인 착지점은 /worship 이다.
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -30,17 +25,13 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { path: "/home", element: <HomePage /> },
-      { path: "/member/bill", element: <BillFormPage /> },
-      { path: "/gatherings", element: <GatheringListPage /> },
-      // /new 가 /:id 보다 먼저 와야 한다 — 순서가 바뀌면 "new" 가 id 로 잡힌다.
-      { path: "/gatherings/new", element: <GatheringFormPage /> },
-      { path: "/gatherings/:id", element: <GatheringDetailPage /> },
-      { path: "/profile", element: <ProfilePage /> },
       { path: "/worship", element: <WorshipSchedulePage /> },
+      { path: "/profile", element: <ProfilePage /> },
     ],
   },
   {
+    // 프로필이 없으면 ProtectedRoute 가 여기로 보낸다. 그래서 이 라우트만 프로필 검사를
+    // 건너뛴다(setupPage) — 아니면 자기 자신으로 무한 리다이렉트한다.
     element: (
       <ProtectedRoute memberOnly setupPage>
         <Layout />
@@ -48,16 +39,6 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/member/setup", element: <MemberProfileSetupPage /> },
-    ],
-  },
-  {
-    element: (
-      <ProtectedRoute memberOnly adminOnly>
-        <Layout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { path: "/admin", element: <AdminPage /> },
     ],
   },
 ]);

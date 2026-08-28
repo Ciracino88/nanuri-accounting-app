@@ -22,7 +22,7 @@ interface MultiProps extends BaseProps {
 }
 type SelectFieldProps = SingleProps | MultiProps;
 
-/** 프로필·청구서 공용 커스텀 드롭다운 (네이티브 select 아님, 애니메이션 목록).
+/** 프로필 포지션 선택용 커스텀 드롭다운 (네이티브 select 아님, 애니메이션 목록).
  *  트리거는 TextField 와 같은 껍데기라 나란히 놔도 어긋나지 않는다.
  *  다중 선택 시 트리거에는 고른 값을 " & " 로 이어 보여준다(예: "어쿠스틱 & 싱어1"). */
 export default function SelectField(props: SelectFieldProps) {

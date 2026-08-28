@@ -36,9 +36,9 @@ export default function TopBar() {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="h-14 px-4 flex items-center justify-between">
-        {/* 로고 = 워드마크. 소모임(주 탭)으로 간다. Primary 는 상호작용 전용이라 로고엔 안 쓴다. */}
+        {/* 로고 = 워드마크. 찬양팀(주 탭)으로 간다. Primary 는 상호작용 전용이라 로고엔 안 쓴다. */}
         <Link
-          to="/gatherings"
+          to="/worship"
           aria-label="나누리 홈"
           className="text-[20px] font-medium text-label-normal"
         >

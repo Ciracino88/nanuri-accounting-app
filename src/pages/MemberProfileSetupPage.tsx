@@ -9,13 +9,11 @@ import Button from "../components/ui/Button";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../store/authStore";
-import { uploadReceipt } from "../lib/uploadReceipt";
+import { uploadAvatar } from "../lib/uploadAvatar";
 import { POSITIONS } from "../constants/worship";
-import { BANKS } from "../constants/banks";
 
 interface FormValues {
   name: string;
-  account_number: string;
   phone: string;
 }
 
@@ -25,7 +23,6 @@ export default function MemberProfileSetupPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       name: userProfile?.name ?? "",
-      account_number: userProfile?.account_number ?? "",
       phone: userProfile?.phone ?? "",
     },
   });
@@ -33,7 +30,6 @@ export default function MemberProfileSetupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [positions, setPositions] = useState<string[]>(userProfile?.position ?? []);
   const [team, setTeam] = useState<string>(userProfile?.team ?? "나누리");
-  const [bank, setBank] = useState<string>(userProfile?.bank_name ?? "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile?.avatar_url ?? null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -52,15 +48,13 @@ export default function MemberProfileSetupPage() {
     setSubmitting(true);
 
     let avatar_url = userProfile?.avatar_url ?? null;
-    if (avatarFile) avatar_url = await uploadReceipt(avatarFile, "avatars");
+    if (avatarFile) avatar_url = await uploadAvatar(avatarFile, user.id);
 
     const { error } = await supabase.from("user_profiles").upsert({
       id: user.id,
       name: values.name,
       team,
       position: positions.length > 0 ? positions : null,
-      bank_name: bank || null,
-      account_number: values.account_number || null,
       phone: values.phone || null,
       avatar_url,
     });
@@ -149,16 +143,6 @@ export default function MemberProfileSetupPage() {
           placeholder="포지션 선택"
           label={<>포지션 <span className="text-label-neutral font-normal">({positions.length}개)</span></>}
         />
-
-        {/* 은행 */}
-        <div className="flex flex-col gap-2">
-          <SelectField value={bank} onChange={setBank} options={BANKS} placeholder="은행 선택" label="은행" />
-          <TextField
-            inputMode="numeric"
-            placeholder="계좌번호를 입력하세요"
-            {...register("account_number")}
-          />
-        </div>
 
         {/* 연락처 */}
         <TextField

@@ -6,10 +6,9 @@ interface Props {
   children: React.ReactNode;
   memberOnly?: boolean;
   setupPage?: boolean;
-  adminOnly?: boolean;
 }
 
-export default function ProtectedRoute({ children, memberOnly, setupPage, adminOnly }: Props) {
+export default function ProtectedRoute({ children, memberOnly, setupPage }: Props) {
   const { user, isAnonymous, userProfile, isLoading } = useAuthStore();
 
   if (isLoading) return <LoadingScreen />;
@@ -18,10 +17,10 @@ export default function ProtectedRoute({ children, memberOnly, setupPage, adminO
 
   if (memberOnly && isAnonymous) return <Navigate to="/" />;
 
-  if (adminOnly && userProfile?.role !== "admin") return <Navigate to="/gatherings" />;
-
-  // setupPage면 프로필 체크 스킵 (필수: 이름 / 팀은 기본값 보장)
-  if (!setupPage && !adminOnly && memberOnly && !isAnonymous && (!userProfile || !userProfile.name)) {
+  // 프로필이 없거나 이름이 비면 먼저 채우게 한다. 찬양팀 시트는 포지션·팀을 읽어
+  // 슬롯을 그리므로, 프로필이 빈 채로 들어오면 화면이 비어 보인다.
+  // setupPage 면 이 검사를 건너뛴다 — 아니면 설정 화면이 자기 자신으로 무한 리다이렉트한다.
+  if (!setupPage && memberOnly && !isAnonymous && (!userProfile || !userProfile.name)) {
     return <Navigate to="/member/setup" />;
   }
 

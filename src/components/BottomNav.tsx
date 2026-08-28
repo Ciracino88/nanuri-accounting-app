@@ -6,13 +6,12 @@ import { ACCENT, MUTED } from "../constants/theme";
 
 type Tab = { to: string; label: string; kind: CreatureKind };
 
-// 탭은 셋뿐이다. 홈은 소모임에 흡수됐고(행사 카드가 소모임 화면 상단으로 올라간다),
-// 갤러리는 빈 껍데기라 지웠으며, 관리자는 탭이 아니라 내정보에서 진입한다.
-const GATHERINGS: Tab = { to: "/gatherings", label: "소모임", kind: "schedule" };
+// 탭은 둘뿐이다. 이 앱이 하는 일은 찬양팀 일정 조율 하나이고, 나머지 기능(소모임·행사·
+// 비용 청구·회계)은 폐기했거나 관리자 iOS 앱으로 옮겨갔다.
 const WORSHIP: Tab = { to: "/worship", label: "찬양팀", kind: "songs" };
 const PROFILE: Tab = { to: "/profile", label: "내정보", kind: "profile" };
 
-const TABS: Tab[] = [GATHERINGS, WORSHIP, PROFILE];
+const TABS: Tab[] = [WORSHIP, PROFILE];
 
 /** 떠 있는 글래스 캡슐 탭바(docs/design.md). 화면 하단에 붙지 않고 살짝 띄운다 —
  *  위치(중앙 하단·바닥 띄움)는 Layout 이 잡고, 이 컴포넌트는 캡슐 자체만 그린다.
