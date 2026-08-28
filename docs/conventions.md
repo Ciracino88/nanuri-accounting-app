@@ -42,28 +42,20 @@
 
 ## 훅
 
+훅은 셋뿐입니다. 앱이 하는 일이 하나라서입니다.
+
 | 훅 | 용도 |
 | --- | --- |
-| `useGatherings` / `useCreateGathering` | 소모임 목록 + Realtime, 개설. 쿼리 키는 `gatheringKeys` |
-| `useCreateCategory` | 소모임 카테고리 생성 (멤버가 직접 만듭니다) |
-| `useToggleGatheringJoin` | 소모임 참여 토글 |
-| `useGatheringReviews` | 후기 조회(좋아요 포함)·작성·수정·삭제·좋아요 토글(`useToggleReviewLike`). 쿼리 키는 `reviewKeys` |
-| `useGatheringRpc` | `useUpdateGatheringPlace`(참가자 누구나) · `useTransferGatheringLeader`(리더만) |
-| `useWorshipSchedule` | 월별 주일 일정 + Realtime |
+| `useWorshipSchedule` | 월별 주일 일정 + 멤버 + 참여 현황, Realtime 구독. 쿼리 키는 `["worship", year, month]` |
 | `useToggleAvailability` | 포지션 참여 토글 (낙관적 캐시 갱신 + 중복 시 교체 확인) |
 | `useCalendar` | 달력 월 이동 상태 (`useReducer`) |
-| `useReceiptUpload` | 파일 선택 + 미리보기 URL 수명 관리 (`revokeObjectURL` 포함) |
 
 ## 유틸
 
 | 파일 | 내용 |
 | --- | --- |
 | `lib/supabase.ts` | Supabase 클라이언트 (단일 인스턴스) |
-| `lib/supabaseList.ts` | `fetchList<T>(table, { orderBy, ascending, filter })` 범용 조회 |
-| `lib/uploadReceipt.ts` | 압축 + Worker 업로드 → URL |
-| `lib/deleteImage.ts` | Worker 경유 R2 삭제 |
-| `lib/gatheringTime.ts` | `computeGatheringStatus`, **`formatGatheringWhen`**, `formatGatheringAt`, `defaultGatheringAt`, `localInputToISO` |
-| `lib/generateNickname.ts` | 게스트 랜덤 닉네임 (형용사+동물+이모지) |
+| `lib/uploadAvatar.ts` | 압축 + Supabase Storage 업로드 → 공개 URL. 경로 첫 폴더가 본인 uid 여야 정책을 통과합니다 |
 
 ## 상수
 
@@ -71,22 +63,27 @@
 | --- | --- |
 | `constants/theme.ts` | `ACCENT`(Primary) · `MUTED`. **Tailwind 클래스를 못 쓰는 자리(인라인 `style`, SVG `fill`)에서만** 씁니다 |
 | `constants/layout.ts` | `PAGE_BOTTOM_PAD` — 떠 있는 탭바에 가리지 않도록 페이지가 확보하는 하단 여백 |
-| `constants/banks.ts` · `constants/worship.ts` | 은행 목록 · 포지션 목록 |
+| `constants/worship.ts` | `POSITIONS` — 포지션 10종. 프로필 편집 셀렉터와 찬양팀 시트 슬롯이 같은 배열을 씁니다 |
 
-## 소모임 시간 — `formatGatheringWhen`을 쓰세요
+## 찬양팀 데이터는 한 쿼리에 셋이 붙어 있습니다
 
-`formatGatheringAt(iso)`가 아니라 **`formatGatheringWhen(gathering)`** 이 화면이 부를 함수입니다.
-챌린지는 `gathering_at`이 `null`이라(기한이 없는 게 챌린지의 정의) `formatGatheringAt`에 그대로
-넘기면 `Invalid Date`입니다. `formatGatheringWhen`이 그 분기를 한 번만 처리해 "무기한"을 돌려줍니다.
+`useWorshipSchedule` 하나가 **주일 목록 · 멤버 · 참여 현황**을 같이 읽어
+`{ schedules, members, availability }` 로 돌려줍니다. 쪼개지 않은 이유는 셋이 항상 같이
+쓰이고(슬롯 하나를 그리는 데 셋 다 필요) 캐시 무효화도 같이 일어나기 때문입니다.
 
-`computeGatheringStatus`도 같은 이유로 **레코드 전체**를 받습니다 — 원데이는 `gathering_at`이,
-챌린지는 `ended_at`이 종료를 정합니다([data-model.md](data-model.md)).
+주의할 점 둘입니다.
+
+- **`members` 는 `user_profiles` 가 아니라 `public_profiles` 뷰에서 옵니다.** 타인의 연락처가
+  새지 않게 하는 경계입니다([data-model.md](data-model.md)). 바꾸지 마세요.
+- **이 훅은 읽기만 하지 않습니다.** 호출될 때마다 앞뒤 넉 달치 주일을 `worship_schedules` 에
+  upsert 합니다. 화면을 여는 것이 곧 일정 테이블을 채우는 것이라, 이 테이블이 비어도
+  저절로 복구됩니다.
 
 ## 코드 규칙
 
 - 주석과 UI 문자열은 한국어입니다.
 - 굵기는 `font-semibold`(600) 기준, 헤드라인은 `font-bold`(700).
-- 페이지는 도메인별 폴더(`pages/<domain>/`)로 묶습니다. 관리자 페이지는 `pages/admin/` 아래.
+- 페이지는 도메인별 폴더(`pages/<domain>/`)로 묶습니다.
 - 파일 상단 경로 주석(`// src/router/index.tsx`)은 일부 파일에만 있습니다 — 일관된 규칙이 아닙니다.
 - 애니메이션은 `motion/react`, 토스트는 `react-hot-toast`, 아이콘은 `lucide-react`
   (+ 일부 `@heroicons/react`)를 씁니다.

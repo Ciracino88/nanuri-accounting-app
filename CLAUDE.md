@@ -1,20 +1,41 @@
 # CLAUDE.md
 
-나누리(Nanuri) — 교회 커뮤니티 앱. React + TypeScript + Vite, Supabase(Postgres·Auth·Realtime),
-Tailwind v4, TanStack Query, Zustand, motion/react.
+나누리(Nanuri) — 청년부 **찬양팀 일정 조율** 웹앱. React + TypeScript + Vite,
+Supabase(Postgres·Auth·Realtime), Tailwind v4, TanStack Query, Zustand, motion/react.
+
+멤버가 주일마다 자기 포지션에 "설 수 있음"을 토글로 표시하고, 누가 어느 자리에 서는지 함께
+봅니다. **앱이 하는 일은 이거 하나입니다.** 소모임·행사·비용 청구·회계·갤러리는 폐기됐거나
+관리자 iOS 앱으로 넘어갔습니다 — 옛 커밋이나 문서에서 보더라도 지금은 없는 기능입니다.
+
+## ⚠ 이 DB 는 우리 것만이 아닙니다
+
+관리자 iOS 앱 **NanuriAdmin**(`~/Desktop/SwiftUI-Project/NanuriAdmin`)과 **같은 Supabase
+프로젝트**(`ciszaukmnglepvqpulya`)를 씁니다. 두 저장소가 각자 `supabase/migrations/` 를 갖고
+서로를 모르지만, **원격의 마이그레이션 이력은 하나로 섞입니다.**
+
+2026-08-13 에 그쪽의 `drop schema public cascade` 가 이 앱의 테이블을 전부 지웠고 백업 기간이
+지나 **데이터는 영구 소실**됐습니다. 스키마를 건드리기 전에
+[docs/status.md의 사고 기록](docs/status.md#-2026-08-13-스키마-삭제-사고)을 읽으세요.
+
+| 테이블 | 주인 |
+| --- | --- |
+| `user_profiles` · `public_profiles` · `worship_schedules` · `worship_availability` | **이 웹앱** |
+| `admins` · `profiles` · `bills` · `finance_*` · `device_tokens` | **NanuriAdmin** — 건드리지 말 것 |
+| `auth.users` · `public.handle_new_user()` | **공유** — 고칠 땐 양쪽 다 확인 |
+
+같은 함정이 Cloudflare 에도 있습니다. **R2 버킷 `nanuri-bills` 는 관리자 앱과 공유**하므로
+지우면 그쪽 영수증이 깨집니다([docs/architecture.md](docs/architecture.md#남은-정리--버킷은-지우면-안-됩니다)).
 
 ## 먼저 읽을 것
 
 **[docs/README.md](docs/README.md)가 문서 인덱스입니다.** 이 프로젝트는 설계 근거를 `docs/`에
 의도적으로 관리합니다 — 방치된 문서가 아니니 추측하기 전에 찾아보세요.
 
-작업 성격별로 시작점이 다릅니다.
-
 | 하려는 일 | 먼저 볼 것 |
 | --- | --- |
 | **화면을 손댄다** | [docs/design.md](docs/design.md) — 필수. 아래 참고 |
 | 부품을 만든다 | [docs/conventions.md](docs/conventions.md) — 이미 있는 걸 또 만들지 않기 위해 |
-| DB·RLS를 건드린다 | [docs/data-model.md](docs/data-model.md) |
+| DB·RLS를 건드린다 | [docs/data-model.md](docs/data-model.md) — 위 경고를 먼저 |
 | 지금 상태가 궁금하다 | [docs/status.md](docs/status.md) |
 
 ### 화면 작업 전 design.md를 보는 이유
@@ -25,26 +46,23 @@ Tailwind v4, TanStack Query, Zustand, motion/react.
 알약 예외"라는 근거 없는 규칙을 만들어 뒀고, design.md(칩·배지·아바타만 `rounded-full`)가
 맞았습니다. 코드와 문서가 어긋나면 대개 코드가 틀린 쪽입니다.
 
-## 지금 앱이 어중간한 상태입니다
-
-원티드 디자인 시스템 전면 개편이 진행 중입니다. **소모임 화면과 하단 탭바만** 새 디자인으로
-넘어갔고 나머지 화면은 대기입니다. 그래서 탭으로 이동하면 옛 디자인 화면이 뜨는데 버그가
-아닙니다 — [docs/README.md](docs/README.md#먼저-읽을-것)에 설명이 있습니다.
-
-하단 탭바는 **떠 있는 글래스 캡슐**로 붙였습니다(소모임·찬양팀·내정보). 화면 하단에 캡슐이
-떠서 콘텐츠 위에 겹치므로, 새 화면을 그릴 땐 `PAGE_BOTTOM_PAD`로 하단을 비우세요
-([docs/design.md](docs/design.md) 하단 탭바 참고).
+하단 탭바는 **떠 있는 글래스 캡슐**입니다(찬양팀·내정보 둘). 화면 하단에 캡슐이 떠서 콘텐츠
+위에 겹치므로, 새 화면을 그릴 땐 `PAGE_BOTTOM_PAD`로 하단을 비우세요.
 
 ## 명령
 
 ```bash
 npm run dev      # Vite 개발 서버 (5173)
 npm run build    # tsc -b && vite build — 타입 에러면 실패
-npm run lint     # eslint. 기존 4건(에러 3·경고 1)이 남아 있습니다 — 리디자인 이전부터입니다
+npm run lint     # eslint. 기존 3건(에러 2·경고 1)이 남아 있습니다 — 리디자인 이전부터입니다
 ```
 
 ⚠ **CSS 토큰이 없어지는 건 타입 에러가 아닙니다.** Tailwind가 클래스를 조용히 안 만들 뿐이라
 빌드는 통과하고 화면만 무스타일로 뜹니다.
+
+게이트 뒤 화면은 `/__dev/<key>` 로 확인합니다(`worship` · `profile` · `profile-empty` ·
+`profile-setup` · `gate` · `login` · `nav` · `topbar`). 자세한 건
+[docs/status.md](docs/status.md#화면-확인하는-법).
 
 ## 이 작업 환경의 제약
 
@@ -53,6 +71,10 @@ npm run lint     # eslint. 기존 4건(에러 3·경고 1)이 남아 있습니�
 ⚠ `db dump`는 Docker가 없으면 **빈 파일을 남기고 실패**합니다. 그 파일을 세면 "0행"이 나와
 "데이터 없음"으로 오독하기 쉽습니다. 원격 데이터 확인이 필요하면 대시보드 SQL 에디터를
 쓰세요.
+
+**원격 DB 직접 연결도 안 될 수 있습니다** — `db.<ref>.supabase.co` 가 IPv6 전용이라
+샌드박스에서 `db push`·`migration list` 가 `Failed to connect` 로 떨어집니다. 그럴 땐
+대시보드 SQL 에디터로 마이그레이션 내용을 실행하세요.
 
 ### DB 비밀번호
 
@@ -72,6 +94,10 @@ set -a; . ./.env.local; set +a; npx supabase db push --dry-run
 **`--dry-run`을 먼저 보세요.** 이 저장소엔 `drop cascade` 후 재생성하는 파괴적 마이그레이션이
 둘(`events_v2` · `gatherings_v2`) 있습니다. 둘 다 적용됐으니 정상이면 목록에 안 뜹니다 —
 **뜬다면 데이터가 날아간다는 신호입니다.**
+
+지금은 미적용 마이그레이션이 **둘** 있는 게 정상입니다 — `20260828000000_restore_worship_schema.sql`
+(스키마 복구)과 `20260828010000_avatar_storage_policy.sql`(아바타 Storage 정책). 순서대로
+적용해야 합니다. 그 외가 뜨면 멈추고 확인하세요.
 
 ## 코드 규칙
 

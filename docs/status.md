@@ -1,270 +1,225 @@
 # 기능 진행 상태
 
-2026-07-17 / `redesign/wanted-ds` 브랜치 기준. 코드를 읽어 확인한 사실만 적었습니다.
+2026-08-28 기준. 코드를 읽어 확인한 사실만 적었습니다.
 
-## ⚠ 지금 진행 중: 원티드 디자인 시스템 전면 개편
+## 이 앱이 하는 일
 
-**앱이 지금 어중간한 상태입니다.** 기능(훅·쿼리·RLS)은 두고 시각 레이어만 원티드 디자인
-시스템으로 갈아엎는 중인데, 토큰·프리미티브와 **소모임 화면 하나만** 넘어갔습니다.
+**찬양팀 일정 조율 하나입니다.** 멤버가 주일마다 자기 포지션에 "설 수 있음"을 토글로 표시하고,
+누가 어느 자리에 서는지 함께 봅니다. 그 외 기능은 폐기됐거나 관리자 iOS 앱으로 넘어갔습니다.
 
-디자인 룰·토큰·측정값은 전부 [design.md](design.md)에 있습니다. **화면을 손대기 전에 먼저 보세요.**
+| 기능 | 상태 | 근거 |
+| --- | --- | --- |
+| 인증 (구글 OAuth) | 동작 | `authStore` + `ProtectedRoute` |
+| 찬양팀 일정 | **핵심 기능** | `/worship`, Realtime 반영 |
+| 프로필 (이름·팀·포지션·연락처) | 동작 | `/member/setup`, `/profile` |
+| 하단 탭바 (찬양팀·내정보) | 동작 | `Layout`이 `TAB_BAR_ROUTES`에서 렌더 |
+| 소모임 | **폐기** | 2026-08-28 코드 제거 |
+| 비용 청구 | **폐기** | 관리자 앱 + 공개 청구 폼(`nanuri-form`)으로 이관 |
+| 행사 · 갤러리 · 회계 · 통계 · 순서별 평가 | **폐기** | 2026-07 중 제거 |
+| 웹 푸시 알림 | 미구현 | 관련 코드 없음 |
 
-> 앞서 있던 "라이트 리디자인 3단계"는 이 작업에 흡수되어 **폐기**됐습니다. 그때 쓰던
-> 카테고리 틴트(teal/pink/amber)·액센트 퍼플은 더 이상 없습니다.
+## ⚠ 2026-08-13 스키마 삭제 사고
 
-### 하단 탭바 — 붙였습니다 (2026-07-17)
+**이 저장소의 DB 테이블이 전부 지워졌고 데이터는 복구하지 못했습니다.** 앞으로의 판단에
+계속 영향을 주는 사실이라 맨 앞에 둡니다.
 
-`Layout`이 **떠 있는 글래스 캡슐** 탭바를 렌더합니다(`BottomNav.tsx`, 새 토큰으로 재작성).
-탭 셋(소모임·찬양팀·내정보)이고, 캡슐 위치(중앙·바닥 띄움)는 `Layout`이 잡고 캡슐 모양은
-`BottomNav`가 그립니다. 크리처 아이콘·활성=아이콘 색 하나 규칙은 그대로 뒀습니다.
+### 무슨 일이 있었나
 
-탭바를 띄우는 화면은 `TAB_BAR_ROUTES`(`/home` · `/gatherings` · `/worship` · `/profile`)입니다.
-상세·개설·행사·관리자 같은 하위 화면은 `BackButton` 흐름이라 숨깁니다.
+이 웹앱은 관리자 iOS 앱 **NanuriAdmin**(`~/Desktop/SwiftUI-Project/NanuriAdmin`)과 **같은
+Supabase 프로젝트**(`ciszaukmnglepvqpulya`)를 씁니다. 그쪽 저장소의
+`20260813120000_reset_schema.sql` 이 이렇게 시작합니다:
 
-> **`/home`에도 띄웁니다.** 착지점을 `/gatherings`로 옮기지 않은 건 `/home`이 아직
-> **비용 청구(`/member/bill`)로 가는 유일한 진입로**이기 때문입니다 — 소모임 화면은 행사만
-> 흡수했지 비용 청구는 안 가져왔습니다. 비용 청구가 소모임/내정보로 옮겨가면 그때 `/home`을
-> 걷어내고 탭바에서도 빼면 됩니다. 홈은 탭이 아니라 활성 표시는 없습니다.
+```sql
+-- 주의: public 스키마의 모든 객체(과거 설문 테이블 등 포함)를 삭제한다.
+drop schema public cascade;
+create schema public;
+```
 
-**하단 여백 주의.** 캡슐이 콘텐츠 위에 뜨므로 각 페이지가 `PAGE_BOTTOM_PAD`로 그만큼을
-비워야 마지막 항목이 안 가립니다. 소모임 목록은 FAB이 캡슐과 가로로 겹쳐 FAB을 캡슐 위로
-올리고 `PAGE_BOTTOM_PAD_WITH_FAB`(더 큰 값)을 씁니다. `/home`·`/worship`·`/profile`은
-`PAGE_BOTTOM_PAD`로 올렸습니다(그 셋은 옛 디자인 그대로라 패딩 값만 손댔습니다).
+그 파일의 전제는 **"멤버용 웹은 폐지"** 였습니다. 사고가 아니라 의도적인 재설계였고, 다만
+이 웹앱이 살아 있다는 사실이 그 전제에서 빠져 있었습니다. 결과로 `user_profiles`,
+`worship_schedules`, `worship_availability`, `gatherings*` 가 전부 사라졌습니다.
 
-### 화면 진행
+### 잃은 것과 남은 것
 
-| 화면 | 상태 |
+- ❌ **모든 행 데이터.** 백업 보존 기간(7일)이 지나 복구 불가. 과거 찬양팀 참여 기록·프로필은
+  영구 소실입니다.
+- ❌ **`worship_*` 테이블 정의.** 이 저장소엔 원래 마이그레이션이 없었습니다(원격에만 존재).
+  코드의 쿼리에서 역추정해 다시 썼습니다.
+- ✅ **`auth.users` 계정 전부.** `auth` 스키마는 `public` 이 아니라 안 지워졌습니다.
+  사람들은 다시 로그인할 수 있습니다.
+- ✅ **`supabase_migrations` 이력.** 역시 별도 스키마라 살아남았습니다 — 그래서 **옛
+  마이그레이션은 "적용됨"으로 남아 있고 `db push` 로 다시 돌릴 수 없습니다.** 복구를 새
+  파일로 앞으로 감은 이유입니다.
+
+### 복구 마이그레이션
+
+[`20260828000000_restore_worship_schema.sql`](../supabase/migrations/20260828000000_restore_worship_schema.sql)
+한 장이 `user_profiles` · `public_profiles` 뷰 · `worship_schedules` · `worship_availability` 를
+다시 세우고, `auth.users` 로부터 프로필 행을 백필하고, 가입 트리거를 고칩니다.
+뒤이어 [`20260828010000_avatar_storage_policy.sql`](../supabase/migrations/20260828010000_avatar_storage_policy.sql)
+이 아바타용 Storage 정책을 얹습니다(Cloudflare 를 끊으면서 필요해졌습니다). **순서대로 둘 다**
+적용해야 합니다 — 뒤 파일이 `user_profiles` 를 참조합니다.
+
+> **⚠ 아직 원격에 적용하지 않았습니다.** 이 작업 환경에서 원격 DB 로 직접 연결이 안 됩니다
+> (`db.<ref>.supabase.co` 가 IPv6 전용). 적용 방법은 아래 "복구 마이그레이션 적용하기".
+
+### 다시 안 겪으려면
+
+**`public` 스키마는 두 앱의 공유 공간입니다.** 어느 쪽 저장소에서든 `drop`·`db reset` 을 하기
+전에 반대쪽이 쓰는 테이블인지 확인하세요. 두 저장소의 `supabase/migrations/` 는 서로를 모르지만
+**원격의 마이그레이션 이력은 하나로 섞입니다.**
+
+지금 각자의 몫은 이렇습니다.
+
+| 테이블 | 주인 |
 | --- | --- |
-| 소모임 목록 · 상세 · 개설(3단계 페이지) · 카테고리 시트 | **완료** |
-| `ui/` 프리미티브 6종 + `BackButton` | **완료** — `SelectField` 는 `multiple` 다중 선택 지원 |
-| 하단 탭바 (떠 있는 글래스 캡슐) · 상단 바 (`TopBar`) | **완료** — 위 참고 |
-| 찬양팀 시트 (`WorshipSchedulePage` · `PositionSlot`) | **완료** — hero 제거, 옛 빨강→Primary 파랑 |
-| 내정보 (`ProfilePage`) | **완료** — 안 쓰던 통계 3종 제거, 내 소그룹·내 후기 관리 추가 |
-| 프로필 편집 (`MemberProfileSetupPage`) | **완료** — 라이트 이식, 포지션 다중 셀렉터 |
-| 나머지 전부 | 대기 |
+| `user_profiles` · `public_profiles` · `worship_schedules` · `worship_availability` | **이 웹앱** |
+| `admins` · `profiles` · `bills` · `finance_*` · `device_tokens` | **NanuriAdmin** — 건드리지 말 것 |
+| `auth.users` · `public.handle_new_user()` | **공유** — 고칠 땐 양쪽 다 확인 |
 
-### 소모임 2단계 — DB 적용 완료 (2026-07-17)
+## 복구 마이그레이션 적용하기
 
-소모임이 **성격(원데이/챌린지) · 카테고리(멤버가 직접 만듦) · 썸네일 · 리더 위임 · 후기**로 확장됐습니다.
-설계 근거는 전부 [data-model.md](data-model.md#소모임-마이그레이션-있음--근거-20260717000000_gatherings_v2sql)에 있습니다.
-
-`20260717000000_gatherings_v2.sql` 을 **원격에 적용했습니다.** `migration list` 기준 로컬 10 개가
-원격과 모두 일치하고 `db push --dry-run` 이 "up to date" 입니다. 드롭 대상이던 옛 `gatherings` ·
-`gathering_participants` 에 실데이터가 없다는 건 push 전에 대시보드에서 확인했습니다.
-`events_v2` 는 이미 적용돼 있어 push 목록에 끼지 않았습니다 — 행사 데이터는 무사합니다.
-
-> **앞으로 `db push` 할 때도 `--dry-run` 을 먼저 보세요.** 이 저장소에는 `drop cascade` 후
-> 재생성하는 파괴적 마이그레이션이 둘(`events_v2` · `gatherings_v2`) 있습니다. 이미 적용됐으니
-> 정상이라면 목록에 안 뜨지만, 뜬다면 **데이터가 날아간다는 신호**입니다.
-
-#### DB 비밀번호 다루는 법
-
-`db push`·`db pull` 은 `SUPABASE_DB_PASSWORD` 를 요구합니다. `.env.local` 에 있습니다
-(`.gitignore` 의 `.env*` 에 걸려 커밋되지 않습니다). **셸이 읽어서 CLI 에 넘기는 이 패턴으로만**
-씁니다:
+`--dry-run` 으로 목록을 먼저 보세요. 뜨는 파일이 **`20260828` 로 시작하는 둘**이어야 정상입니다.
 
 ```bash
 set -a; . ./.env.local; set +a; npx supabase db push --dry-run
 ```
 
-⚠️ **파일을 열거나 값을 출력하지 마세요** — `cat`·`echo`·에디터·`set -x` 전부. 값이
-파일 → 셸 → supabase 프로세스로만 흐르면 어디에도 안 남지만, 한 번이라도 출력하면 프로덕션 DB
-평문 비밀번호가 터미널 기록·에이전트 대화 로그에 남습니다. 안전하게 둔 걸 꺼내서 덜 안전한 곳에
-복사하는 셈입니다. AI 에이전트에게 시킬 때 특히 그렇습니다 — 컨텍스트가 요약되고 저장됩니다.
-
-적용 후 **소모임 화면 동작을 직접 확인했습니다** — 개설·참여·후기가 새 스키마 위에서 돕니다.
-
-다만 **자동 테스트는 없습니다.** 아래 둘은 사람 손으로 만들기 어려운 경로라 아직 실제로 밟힌
-적이 없을 수 있습니다. 나중에 이상하면 여기부터 의심하세요.
-
-- **리더 승계 트리거** — 리더가 모임을 나가거나 admin 이 계정을 지울 때 도는데, 후자는 FK 액션
-  두 개(`set null` · `cascade`)의 순서가 보장되지 않는 경합 위에 있습니다.
-- **재귀 차단** — `gathering_leader_vacated` 의 `when` 조건이 끊습니다. 조건을 손대면 무한 재귀입니다.
-
-(로컬 `supabase db reset` 은 못 돌립니다 — 이 작업 환경에 psql/Docker 가 없습니다.)
-
-> **push 전에 후기 INSERT 정책 버그를 하나 고쳤습니다.** 서브쿼리 안에서 `gathering_id` 를
-> 수식 없이 쓰고 있었는데, `gathering_participants` 에 같은 이름의 컬럼이 있어 안쪽 스코프가
-> 이깁니다 — `gp.gathering_id = gp.gathering_id` 라는 항등식이 되어 정책이 "아무 모임에나
-> 참가자면 통과"로 무너집니다. `gathering_reviews.gathering_id` 로 수식해서 고쳤습니다.
-> **RLS 서브쿼리에서 바깥 컬럼은 항상 테이블명으로 수식하세요.** 바로 위 participants insert
-> 정책이 무사한 건 서브쿼리가 `gatherings g`(컬럼명이 `id`)라 이름이 겹치지 않아서일 뿐입니다.
-
-**~~종료·삭제·리더 위임~~ 완료 (2026-07-18)** — [`GatheringDetailPage`](../src/pages/gathering/GatheringDetailPage.tsx)의 리더 흐름을 붙였습니다. DB 변경은 없습니다 — 종료(리더 update 정책)·삭제(리더 delete 정책)·위임(기존 승계 트리거) 전부 기존 RLS 로 됩니다.
-
-- **리더 관리 시트(⋯)** — 종료·삭제는 참여 영역에서 빼 **상단 우측 `⋯` → 바텀시트**([`BottomSheet`](../src/components/ui/BottomSheet.tsx), 제목 "소모임 관리")로 모았습니다. 리더에게만 `⋯` 가 보이고, 참여 버튼은 "참여하기"만 남습니다. 행은 아이콘+라벨+설명(종료="후기·기록은 남아요" / 삭제="통째로 지워요")이고 중립색입니다 — 위험 강조는 확인창의 빨강 버튼이 집니다(로그아웃과 같은 규칙). 행을 누르면 시트를 닫고 각자의 확인창으로 넘어갑니다.
-  - **상단 바(뒤로가기+⋯)는 `sticky`** 라 스크롤해도 고정됩니다. 전폭(-mx-4 px-4) 불투명 배경(캔버스와 같은 색)이라 콘텐츠가 뒤로 깔끔히 사라지고 정지 땐 이음매가 없습니다. 스크롤 컨테이너는 `Layout` 의 `main` 이라, 프리뷰로 확인하려면 `Phone` 이 그 구조를 흉내 내야 합니다(아래 "화면 확인하는 법" 참고).
-- **종료** — 시트의 "모임 종료하기"([`useEndGathering`](../src/hooks/useGatherings.ts) → `ended_at` 찍기). 삭제와 달리 **기록을 남깁니다**(done 이 되어 참여만 닫힘). 챌린지는 시간으로 안 끝나서 이게 유일한 종료 경로라 open 일 때만 뜹니다.
-- **삭제** — 두 경로입니다. 둘 다 [`useDeleteGathering`](../src/hooks/useGatherings.ts)로 소모임을 지웁니다(참여·후기 CASCADE).
-  - **시트의 "소모임 삭제"** — 리더가 언제든(다른 참여자가 있어도, open·done 어느 상태든) 부를 수 있습니다. 확인창이 "참여자 N명·후기 M개가 함께 삭제돼요"를 예고합니다.
-  - **혼자 남아 나가기** — 리더가 혼자일 때 "내가 이끄는 모임"(=나가기)을 누르면 "나가면 소모임이 삭제돼요" 확인창이 뜹니다(위임할 사람이 없으므로).
-- **리더 위임** — 리더가 **다른 참여자가 있을 때** 나가면 "리더가 ○○님에게 넘어가요" 확인창이 뜨고, 확인하면 평범한 나가기 → DB 승계 트리거가 넘깁니다. 승계 대상(가장 먼저 들어온 참가자)은 `gathering_participants.created_at` 으로 짚어 트리거와 같은 기준입니다 — 그래서 참여자 쿼리에 `created_at` 을 추가했습니다. `transfer_gathering_leader` RPC(나가지 않고 넘기기)는 여전히 전용 화면이 없습니다.
-- **트리거는 안 건드렸습니다.** "마지막 참가자가 나가면 종료로 남긴다"는 계정 삭제 안전망으로 그대로 두고, UI 에서 리더가 직접 나가는 경로만 명시적 삭제로 처리했습니다.
-- ⚠ 게이트 뒤 화면이라 프리뷰(목 데이터)에선 **세 확인창의 렌더·문구·승계 대상 이름까지** 확인했습니다. 실제 종료·삭제·위임은 로그인 뒤 실데이터에서만 밟힙니다. 프리뷰 키: `gathering-detail-mine`(리더+타인) · `gathering-detail-solo`(리더 혼자).
-
-**~~소모임 본문 Claude 자동 생성~~ 완료 (2026-07-18)** — 개설 3단계의 본문 입력을 "Claude로 작성 / 직접 작성" 카드 선택으로 바꿨습니다. Claude 로 작성 → 풀스크린 타이핑 오버레이([`GenerationOverlay`](../src/components/gathering/GenerationOverlay.tsx))에서 스트리밍으로 본문이 써지고, 확인하면 직접 입력창으로 넘어가 이어서 손봅니다.
-
-- **Edge Function `generate-description`** — Claude 키를 프론트에 못 두니 [함수](../supabase/functions/generate-description/index.ts)에서 호출합니다. `verify_jwt=true`(플랫폼) + `getUser()`(실제 세션)로 로그인 사용자만 게이팅. `claude-opus-4-8` 를 **스트리밍**으로 받아 SSE 의 `text_delta` 만 뽑아 plain text 로 흘려보냅니다. **프로덕션 배포 완료**(ACTIVE, 시크릿 `ANTHROPIC_API_KEY` 설정됨). `functions.invoke` 는 스트리밍을 못 다뤄 [`generateDescription.ts`](../src/lib/generateDescription.ts)가 함수 URL 을 직접 `fetch` 하고 세션 토큰을 실어 보냅니다.
-- **마커-라이트 본문** — 결과는 작은 마커 방언(`# 제목` · `> 인용` · `❓/💬` FAQ · `- 목록`)으로 저장되고, [`parseDescription`](../src/lib/parseDescription.ts) → [`DescriptionBody`](../src/components/gathering/DescriptionBody.tsx)가 블록으로 파싱해 디자인 토큰으로 렌더합니다. 상세 화면 본문이 이걸로 교체됐습니다. **마커가 하나도 없으면 문단 하나** — 손으로 쓴 기존 통짜 글과 하위 호환입니다.
-- ⚠ 게이트 뒤 화면이라 실제 생성은 로그인 뒤에만 밟힙니다. 프리뷰(`gathering-detail`)에는 마커 본문 목데이터를 넣어 `DescriptionBody` 렌더만 확인했습니다.
-
-**~~ConfirmDialog 원티드 이식~~ 완료 (2026-07-18)** — [`ConfirmDialog`](../src/components/ConfirmDialog.tsx)를 옛 토큰(`bg-card`·`text-fg`·`bg-accent`…)에서 새 토큰으로 옮겼습니다. 이미 찬양팀·내정보(둘 다 새 디자인)가 쓰고 있어 그 둘도 함께 개선됩니다. danger 는 `bg-status-negative`(삭제), 기본은 `bg-primary-normal`.
-
-**~~후기 수정~~ 완료** — 내 후기 카드에 수정 버튼을 붙였습니다. 누르면 그 자리에서 인라인 편집(저장/취소)으로 바뀌고 [`useUpdateReview`](../src/hooks/useGatheringReviews.ts)를 호출합니다. `updated_at`이 채워지면 카드에 "· 수정됨"이 뜹니다.
-
-**~~후기 좋아요~~ 완료** — `gathering_review_likes` 테이블([마이그레이션](../supabase/migrations/20260717010000_gathering_review_likes.sql), 원격 적용됨)을 새로 만들고, 후기 카드에 하트+카운트 토글을 붙였습니다([`useToggleReviewLike`](../src/hooks/useGatheringReviews.ts), 참여 토글과 같은 낙관적 방식). ⚠ 게이트 뒤 화면이라 프리뷰(목 데이터)에선 렌더링만 확인했습니다 — 실제 토글은 로그인 뒤 실데이터에서만 밟힙니다.
-
-남은 화면을 잔재가 많은 순으로. 숫자는 아래 두 패턴의 매치 수라 대략의 규모로만 보세요.
-
-행사 페이지들이 잔재의 절반이었는데 [행사 기능 제거](#행사)로 통째로 사라졌습니다. 남은 건
-아래뿐입니다(`admin/AdminPage`·`HomePage`는 행사 제거로 더 줄었으니 숫자는 상한으로만).
-
-| 파일 | 옛 토큰 | 다크 잔재 |
-| --- | --- | --- |
-| `bill/BillFormPage` | — | 22 |
-| `admin/AdminPage` | — | ≤16 |
-| `HomePage` | ≤11 | — |
-| `auth/MemberLoginPage` | 4 | — |
-| `auth/GatePage` · `LoadingSpinner` · `BackButton` | 각 2 | — |
-| `LoadingScreen` · `main.tsx` | 각 1 | 각 1 |
-
-**두 종류가 섞여 있습니다.** 다크 잔재는 폐기된 다크 재디자인의 하드코딩 hex라 흰 배경에서
-안 보이거나 뒤집혀 보입니다. 옛 토큰은 그 다음 라이트 리디자인의 것이라 보이긴 합니다.
-
 ```bash
-# 다크 잔재
-grep -rnE "#f0f2f8|#8892a0|#6b7785|#0f1117|#4a5568|#c0c8d4|#363d47|rgba\(255,\s*255,\s*255,\s*0\.|colorScheme:\s*\"dark\"" src/
-
-# 옛 토큰
-grep -rnE "text-fg|bg-card|bg-surface|bg-sunken|text-accent|bg-accent|rounded-tile|rounded-panel|shadow-card|shadow-lift|shadow-accent|text-caption[^0-9]|text-body[^0-9]|text-heading|text-emphasis|text-micro|text-title[^0-9]|text-display|text-info|text-danger|text-success|border-line[^-]|bg-inverse" src/
+set -a; . ./.env.local; set +a; npx supabase db push
 ```
 
-`index.css`의 17건은 폐기 예정 블록 자체라 오탐입니다. `nav/creatures.tsx`의 다크 매치 한 건은
-주석이라 오탐입니다.
+연결이 안 되면(이 저장소의 샌드박스에서 그렇습니다) 대시보드 SQL 에디터에 파일 내용을 붙여
+실행해도 됩니다. 다만 그렇게 하면 `supabase_migrations` 이력에 안 남으므로, 다음 `db push` 가
+같은 파일을 다시 밀려고 합니다 — 파일이 `if not exists` · `drop policy if exists` ·
+`on conflict do nothing` 으로 재실행에 견디게 쓰여 있어 두 번 돌아도 안전합니다.
+
+### 적용한 뒤 사람이 해야 하는 일
+
+**포지션과 팀은 되살아나지 않습니다.** `auth.users` 에 없던 값이라 백필이 못 채웁니다.
+둘 중 하나를 하세요.
+
+- **각자 채우기** — 로그인하면 `ProtectedRoute` 가 `/member/setup` 으로 보내고, 그 화면이
+  이름·팀·포지션을 한 번에 받습니다. 아무 조치 없이도 도는 경로입니다.
+- **대시보드에서 채우기** — 백필이 행을 미리 만들어 두므로 `user_profiles` 에서
+  `position` · `team` 만 채우면 됩니다. UUID 를 손으로 옮길 필요가 없습니다.
+
+`position` 이 비면 그 사람은 **찬양팀 시트에 아예 안 뜹니다**(쿼리가
+`.not("position", "is", null)` 로 거릅니다). 내정보 화면이 이 상태를 안내하도록 해뒀습니다.
+
+### 적용 후 확인할 것
+
+로그인 뒤에만 밟히는 경로라 프리뷰로는 확인할 수 없습니다.
+
+1. 신규 계정 로그인 → 가입이 되는가 (옛 트리거는 "관리자 계정이 아닙니다" 로 막았습니다)
+2. `/member/setup` 저장 → `user_profiles` 에 행이 남는가
+3. `/worship` 에서 내 슬롯 토글 → `worship_availability` 에 반영되는가
+4. **교체** — 남이 이미 선 자리를 누르면 확인창이 뜨고, 확인하면 그 사람이 내려가는가
+   (RLS 를 좁혔습니다. 아래 참고)
+5. 다른 기기 둘로 열어 토글 → Realtime 으로 즉시 반영되는가
+
+## 찬양팀 RLS — 옛 구멍을 좁혔습니다
+
+옛 DB 에는 `worship_availability` UPDATE 정책이 둘이었고 하나가
+`qual = (auth.uid() is not null)` 이라 **로그인한 누구나 남의 참여 행을 아무 값으로나 바꿀 수**
+있었습니다. 다시 만들면서 좁혔습니다.
+
+```sql
+using      (멤버면 남의 행도 집을 수 있다)
+with check (user_id = auth.uid() or available = false)
+```
+
+**"본인 행만" 으로 막으면 안 됩니다.** [`useToggleAvailability`](../src/hooks/useToggleAvailability.ts)의
+"교체" 가 같은 포지션에 먼저 등록된 사람의 행을 `available: false` 로 내리기 때문입니다.
+새 정책은 남의 행을 **내리는 것만** 허용합니다 — 올리거나 다른 값으로 바꾸는 건 막힙니다.
+
+⚠ 원격에 적용해 실제로 눌러본 적은 아직 없습니다. 교체가 안 되면 여기부터 의심하세요.
+
+## 원티드 디자인 시스템 개편 — 사실상 완료
+
+기능(훅·쿼리·RLS)은 두고 시각 레이어만 원티드 디자인 시스템으로 옮기는 작업이었습니다.
+남아 있던 옛 디자인 화면(홈·비용 청구·관리자·소모임)이 **범위 축소로 통째로 사라져서**,
+지금 살아 있는 화면은 전부 새 디자인입니다.
+
+디자인 룰·토큰·측정값은 [design.md](design.md)에 있습니다. **화면을 손대기 전에 먼저 보세요.**
+
+| 화면 | 상태 |
+| --- | --- |
+| 찬양팀 시트 (`WorshipSchedulePage` · `PositionSlot`) | 완료 |
+| 내정보 (`ProfilePage`) | 완료 — 포지션 카드로 재작성 |
+| 프로필 편집 (`MemberProfileSetupPage`) | 완료 — 은행·계좌 제거 |
+| 하단 탭바 · 상단 바 (`TopBar`) | 완료 |
+| `ui/` 프리미티브 6종 + `BackButton` | 완료 |
+| 게이트 · 로그인 (`GatePage` · `MemberLoginPage`) | **미완** — 옛 토큰 6건 |
+| `LoadingScreen` · `LoadingSpinner` | **미완** — 옛 토큰 3건 |
+
+남은 잔재는 이제 이만큼입니다(`index.css` 17건은 폐기 예정 블록 자체라 오탐,
+`DevPreviewPage` 6건은 개발 전용 화면).
+
+```bash
+# 옛 토큰
+grep -rnE "text-fg|bg-card|bg-surface|bg-sunken|text-accent|bg-accent|rounded-tile|rounded-panel|shadow-card|shadow-lift|shadow-accent|text-caption[^0-9]|text-body[^0-9]|text-heading|text-emphasis|text-micro|text-title[^0-9]|text-display|text-info|text-danger|text-success|border-line[^-]|bg-inverse" src/
+
+# 다크 잔재 (폐기된 다크 재디자인의 하드코딩 hex)
+grep -rnE "#f0f2f8|#8892a0|#6b7785|#0f1117|#4a5568|#c0c8d4|#363d47|rgba\(255,\s*255,\s*255,\s*0\.|colorScheme:\s*\"dark\"" src/
+```
+
+다크 잔재는 `main.tsx` 1건과 `nav/creatures.tsx` 1건(주석이라 오탐)뿐입니다.
 
 ### 옛 토큰 블록 지우는 법
 
-`@theme` 안에 폐기 예정 블록이 남아 있습니다. 화면을 새로 그릴 때마다 하나씩 걷어내고
-마지막 페이지가 끝나면 블록째 지웁니다.
+`index.css` 의 `@theme` 안에 폐기 예정 블록이 남아 있습니다. 위 두 화면을 옮기고 나면
+블록째 지울 수 있습니다.
 
 ⚠ **토큰을 지워도 빌드는 통과합니다.** Tailwind 가 클래스를 조용히 안 만들 뿐이라 화면이
-무스타일로 뜹니다. 그래서 한 번에 못 지우고 페이지 단위로 옮깁니다.
+무스타일로 뜹니다.
 
 ⚠ **그 블록이 파일 뒤쪽이라 새 토큰을 덮을 수 있습니다.** 실제로 옛 `--radius-card`(20)가
 새 값(16)을 덮고 있었습니다. 같은 이름을 양쪽에 두지 마세요.
 
 ## 화면 확인하는 법
 
-바꾼 화면은 눈으로 확인할 수 있습니다. **Claude in Chrome** 확장이 연결돼 있으면 스크린샷이
-되고, 로그인된 세션을 그대로 쓰므로 보호된 화면도 보입니다. 앱 안의 브라우저 도구로
-`localhost:5173` 을 직접 열어도 됩니다.
+바꾼 화면은 눈으로 확인할 수 있습니다. 앱 안의 브라우저 도구로 `localhost:5173` 을 열거나,
+**Claude in Chrome** 확장이 연결돼 있으면 로그인된 세션을 그대로 씁니다.
 
-반대로 게이트·로그인은 **로그인돼 있으면** 홈으로 리다이렉트돼 볼 수 없습니다. 방향이 반대인
-두 문제라 개발 전용 미리보기를 뒀습니다 — [`src/pages/dev/DevPreviewPage.tsx`](../src/pages/dev/DevPreviewPage.tsx)가
-`main.tsx`에서 앱 라우터 **대신** 마운트되고, `authStore`와 쿼리 캐시를 원하는 상태로 꾸며
+반대로 게이트·로그인은 **로그인돼 있으면** 리다이렉트돼 볼 수 없습니다. 방향이 반대인 두
+문제라 개발 전용 미리보기를 뒀습니다 — [`src/pages/dev/DevPreviewPage.tsx`](../src/pages/dev/DevPreviewPage.tsx)가
+`main.tsx` 에서 앱 라우터 **대신** 마운트되고, `authStore` 와 쿼리 캐시를 원하는 상태로 꾸며
 띄웁니다. `import.meta.env.DEV` 게이트라 프로덕션 번들에는 들어가지 않습니다.
 
-현재 화면: `nav` · `topbar` · `gate` · `login` · `home` · `gatherings` · `gathering-detail`
-(챌린지·타인 시점) · `gathering-detail-mine`(리더+타인) · `gathering-detail-solo`(리더 혼자) ·
-`gathering-new` · `worship` · `profile` · `profile-setup`. 경로 없이 `/__dev/`로 가면 목록이 뜹니다.
+현재 화면: `nav` · `topbar` · `gate` · `login` · `worship` · `profile` ·
+`profile-empty`(포지션 없는 상태) · `profile-setup`. 경로 없이 `/__dev/` 로 가면 목록이 뜹니다.
 
-목 데이터를 추가할 때 주의할 점 셋:
+목 데이터를 추가할 때 주의할 점:
 
-- **`Seed`가 `staleTime: Infinity`를 같이 박는 게 핵심입니다.** 캐시에 심기만 하면, 훅에
-  `staleTime`이 없는 쿼리는 마운트하자마자 재조회하고 로그인이 없어 **빈 배열이 성공으로**
+- **`Seed` 가 `staleTime: Infinity` 를 같이 박는 게 핵심입니다.** 캐시에 심기만 하면, 훅에
+  `staleTime` 이 없는 쿼리는 마운트하자마자 재조회하고 로그인이 없어 **빈 배열이 성공으로**
   돌아오면서 목 데이터를 조용히 덮어씁니다. 화면이 계속 "빈 상태"로 보이면 십중팔구 이겁니다.
-- **화면이 읽는 쿼리를 다 심어야 합니다.** 예: 소모임 상세는 후기·좋아요까지 읽으므로
-  `reviewKeys`도 함께 심어야 카드가 다 뜹니다.
-- 상대 시각 데이터(소모임 `gathering_at`)는 **오늘 기준으로 만드세요.** 고정 날짜로 두면
-  시간이 지나 전부 "종료"로 굳습니다.
-- `useParams`로 `:id`를 읽는 페이지(소모임 상세)는 `MemoryRouter` 안에 **`Routes`/`Route`까지**
-  세워야 합니다. `initialEntries`만 주면 params가 빈 객체입니다.
+- **화면이 읽는 쿼리를 다 심어야 합니다.**
+- 상대 시각 데이터는 **오늘 기준으로 만드세요.** 고정 날짜로 두면 시간이 지나 과거로 굳습니다.
 - **`Phone` 래퍼는 실제 셸(`Layout`)의 스크롤 구조를 흉내 냅니다** — 바깥 `h-dvh overflow-hidden`
-  + 안쪽 `flex-1 overflow-y-auto`. 그래야 `sticky`(상세 상단 바 등)가 실제 앱과 똑같이 스크롤
-  영역에 붙습니다. 예전 `min-h-dvh`(윈도우 스크롤)에선 sticky 가 붙을 컨테이너가 없어 프리뷰에서만
-  안 먹었습니다 — 실기기에선 되는데 프리뷰에서 "안 된다"고 오진하기 쉬웠습니다.
+  + 안쪽 `flex-1 overflow-y-auto`. 그래야 `sticky` 가 실제 앱과 똑같이 스크롤 영역에 붙습니다.
 
 **스크린샷 함정 둘**:
 
 1. 화면마다 등장 애니메이션(`initial={{ opacity: 0 }}`)이 있어 **첫 장이 빈 화면·반투명으로
    찍힙니다.** 한 번 더 찍으세요. 빈 화면을 보고 "렌더가 안 된다"고 진단하지 마세요.
 2. 창 크기가 스크린샷 사이에 바뀔 수 있습니다. 클릭 좌표는 **바로 직전 장** 기준으로 잡으세요.
-   요소 참조(`read_page` → `ref`)나 셀렉터로 누르는 게 더 안전합니다.
 
 **DOM 을 잴 때 함정 하나 더**: 상태가 바뀐 직후 값을 읽으면 React 커밋 전이거나
-`transition-colors` 전환 중이라 **옛 값이 잡힙니다.** 실제로 에러 테두리를 버그로 오진할
-뻔했습니다. 넉넉히 기다리고 재세요.
-
-## 기능별 상태
-
-| 기능 | 상태 | 근거 |
-| --- | --- | --- |
-| 인증 (멤버/게스트/관리자) | 동작 | `authStore` + `ProtectedRoute` |
-| 영수증 비용 청구 | 동작 | `/member/bill` → `BillFormPage` |
-| 행사 (타임라인) | **폐기** | 아래 참고 — 코드·테이블 모두 제거 완료 |
-| 소모임 | **2단계 동작** | 개설·참여·후기(작성·수정·삭제·좋아요)·카테고리 생성·리더 종료·삭제·위임·본문 Claude 자동 생성까지 확인. 정산·템플릿은 미착수 |
-| 찬양팀 일정 | 동작 | `/worship`, Realtime 반영 |
-| 하단 탭바 | **동작** | 떠 있는 글래스 캡슐. `Layout`이 `TAB_BAR_ROUTES`에서 렌더 |
-| 순서별 평가 | **폐기** | 아래 참고 |
-| 갤러리 | **폐기** | 준비 중 안내만 렌더하던 빈 껍데기라 삭제 |
-| 회계 리포트 | **폐기** | 아래 참고 |
-| 통계 | 라우트 제거됨 | 커밋 `d6134e7` |
-| 메뉴판 → Claude 메뉴 추출 | **코드 없음** | 의존성까지 제거함 |
-| 게스트 청구 폼 | **없음** | `/guest/form` 라우트 부재 |
-| 웹 푸시 알림 | 미구현 | 관련 코드 없음 |
-
-## 폐기된 기능
-
-### 순서별 평가
-
-**UI 는 원래 없었습니다.** `EventTimelinePage`에 평가 화면이 없는데 훅(`useEventTimeline`,
-`useEventResults`)과 타입만 남아 있었고, 유일한 소비자였던 `EventResultsPage`는 라우터에
-연결조차 안 돼 있었습니다. 이 문서가 오래도록 "타임라인 + 평가 동작"이라고 적어둔 건
-**사실이 아니었습니다.**
-
-훅·타입·`lib/mood`·`MoodRating`·`results_public` 플래그를 전부 정리했습니다.
-**`segment_evaluations` 테이블과 Realtime 퍼블리케이션은 2026-07-17
-[`20260717020000_drop_dead_tables.sql`](../supabase/migrations/20260717020000_drop_dead_tables.sql)로
-DB 에서 지웠습니다.**
-
-### 회계 리포트
-
-세 페이지와 훅 둘이 있었지만 라우터에 없었고, **쿼리하던 `accounting_*` 테이블이 원격 DB 에
-존재하지 않았습니다**(대신 `finance_*` 가 있어 이름이 바뀐 뒤 코드가 안 따라간 것으로 보입니다).
-게다가 iOS 앱으로 이관 예정이라 웹에서 되살릴 계획이 없어 삭제했습니다.
-관리자 페이지의 "회계 장부 관리" 항목은 누르면 준비 중 안내만 뜹니다.
-
-### 행사
-
-리디자인 뒤 반쯤 고아였습니다 — 목록(`/events`)은 로그인 착지점 `/home` 을 통해서만 닿았고,
-관리자 편집(`/admin/events/*`)은 진입로가 아예 없었으며(옛 다크 디자인 그대로), 조회 경로는
-소모임 화면 상단의 "다가오는 행사" 카드뿐이었습니다. 안 쓰기로 해서 **코드를 전부
-걷어냈습니다** — 페이지 6종(`event/*`·`admin/event/*`), `EventInfoView`, `useEvents` 훅,
-`types/event`, `lib/eventStatus`·`lib/eventTime`, 라우트, 소모임 상단 카드, 홈의 행사 히어로·
-일정 보기, 관리자의 행사 관리 탭.
-
-**`events`·`event_segments` 테이블도 지웠습니다** — 2026-07-17
-[`20260717030000_drop_event_tables.sql`](../supabase/migrations/20260717030000_drop_event_tables.sql).
-대시보드에서 확인한 원격 9건은 전부 테스트 데이터라 백업 없이 버렸습니다.
-
-## 미연결(고아) 코드
-
-- **`/admin` 라우트** — 살아 있지만 진입로가 없습니다. 관리자는 내정보에서 진입시킬 계획입니다.
-  (`/home`은 이제 탭바가 떠서 닿을 수 있고, 자신도 탭바로 다른 탭에 갈 수 있습니다. 다만
-  홈은 소모임에 흡수될 예정이라 임시입니다 — 위 "하단 탭바" 참고.)
-- ~~`event_participants` 테이블~~ — "내 일정에 추가"용으로 만들었으나 조회 코드가 없어
-  2026-07-17 [`20260717020000_drop_dead_tables.sql`](../supabase/migrations/20260717020000_drop_dead_tables.sql)로 지웠습니다.
+`transition-colors` 전환 중이라 **옛 값이 잡힙니다.** 넉넉히 기다리고 재세요.
 
 ## 알려진 정리 대상
 
-- **마이그레이션 공백** — 행사·소모임 외 테이블에 마이그레이션이 없습니다.
-  `npx supabase db pull`로 메울 수 있습니다. ([data-model.md](data-model.md))
-- **Worker 인증 없음** — `/upload`, `/delete`가 무인증에 `Allow-Origin: *`입니다.
-  URL만 알면 누구나 업로드·삭제할 수 있습니다.
-- **`worship_availability` RLS** — 로그인한 누구나 남의 참여 행을 수정할 수 있습니다. 다만 이
-  느슨함을 "교체" 기능이 쓰고 있어 그냥 지우면 깨집니다.
-  ([data-model.md](data-model.md#-알려진-구멍-worship_availability))
+- **마이그레이션 공백** — `admins`·`profiles`·`bills`·`finance_*` 는 NanuriAdmin 저장소에
+  정의가 있습니다. 이 저장소 것은 이제 복구 마이그레이션에 다 있습니다.
+- ~~**Worker 인증 없음**~~ — 2026-08-28 **이 앱 기준으로는** 해결. 아바타를 Supabase Storage
+  로 옮기고 Cloudflare 를 끊었습니다([architecture.md](architecture.md#cloudflare-를-끊은-이유)).
+  ⛔ **다만 Cloudflare 자원은 하나도 지우면 안 됩니다** — Worker `nanuri-bill` 과 R2 버킷
+  `nanuri-bills` 를 관리자 앱이 아직 씁니다(배포된 `nanuri-form` 이 `nanuri-bill` 을 서비스
+  바인딩으로 부릅니다). 그 무인증 Worker 는 관리자 앱 쪽 숙제로 남습니다.
 - **`line-solid` 대비 1.19** — 인풋 테두리가 흰 면에서 거의 안 보입니다(WCAG 1.4.11 은 3:1
   요구). 원티드 원본값이라 미해결로 뒀습니다. ([design.md](design.md))
-- **린트 3건** — `ConfirmDialog`·`main.tsx`에 있으며 리디자인 이전부터
-  있던 것들입니다(`npm run lint`).
+- **린트 3건** — `ConfirmDialog`·`main.tsx` 에 있으며 리디자인 이전부터입니다(`npm run lint`).
+- **`nav/creatures.tsx` 에 안 쓰는 크리처 4종** — 탭이 둘로 줄면서 `home`·`schedule`·
+  `gallery`·`admin` 이 놀고 있습니다. 그림이라 지우진 않았습니다.
